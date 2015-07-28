@@ -12,8 +12,8 @@
 namespace ONGR\OXIDConnectorBundle\Tests\Functional\Overall;
 
 use ONGR\ConnectionsBundle\Command\ImportFullCommand;
-use ONGR\ElasticsearchBundle\DSL\Query\MatchAllQuery;
-use ONGR\ElasticsearchBundle\ORM\Manager;
+use ONGR\ElasticsearchBundle\Service\Manager;
+use ONGR\ElasticsearchDSL\Query\MatchAllQuery;
 use ONGR\OXIDConnectorBundle\Tests\Functional\AbstractTestCase;
 
 class DataImportTest extends AbstractTestCase
@@ -83,8 +83,8 @@ class DataImportTest extends AbstractTestCase
         // Test if all data was inserted.
         $repository = $manager->getRepository($repository);
         $search = $repository
-            ->createSearch()
-            ->addQuery(new MatchAllQuery());
+            ->createSearch();
+        $search->addQuery(new MatchAllQuery());
         $documents = $repository->execute($search);
         $this->assertEquals($resultCount, $documents->count());
         $documents = iterator_to_array($documents);

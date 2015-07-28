@@ -10,13 +10,29 @@
             "homepage": "http://www.ongr.io"
         }
     ],
+    "repositories": [
+        {
+            "type": "vcs",
+            "url": "git@github.com:GrandLTU/ElasticsearchBundle.git"
+        },
+        {
+            "type": "vcs",
+            "url": "git@github.com:GrandLTU/ElasticsearchDSL.git"
+        },
+        {
+            "type": "vcs",
+            "url": "git@github.com:GrandLTU/ConnectionsBundle.git"
+        }
+    ],
     "require": {
         "php": ">=5.4",
         "symfony/symfony": "~2.6",
         "doctrine/doctrine-bundle": "~1.2",
-        "ongr/connections-bundle": "~0.6",
+        "ongr/connections-bundle": "dev-es-stable-rc as v0.8.1",
         "ongr/content-bundle": "~0.4",
-        "ongr/router-bundle": "~0.3"
+        "ongr/router-bundle": "~0.4",
+        "ongr/elasticsearch-bundle": "dev-rc_stable_merged as v0.10.1",
+        "ongr/elasticsearch-dsl": "dev-suggester as dev-master"
     },
     "require-dev": {
         "phpunit/phpunit": "~4.2",
