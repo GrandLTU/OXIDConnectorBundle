@@ -4,7 +4,3 @@ parameters:
 
     ongr_oxid.seo_finder_service.repository: ONGROXIDConnectorBundleTest:Seo
 
-imports:
-    - { resource: services_execute.yml }
-    - { resource: services_import.yml }
-    - { resource: services_provide.yml }

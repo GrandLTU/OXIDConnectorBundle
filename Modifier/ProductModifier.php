@@ -16,45 +16,14 @@ use ONGR\ConnectionsBundle\EventListener\AbstractImportModifyEventListener;
 use ONGR\ConnectionsBundle\Pipeline\Event\ItemPipelineEvent;
 use ONGR\ConnectionsBundle\Pipeline\Item\AbstractImportItem;
 use ONGR\ConnectionsBundle\Pipeline\ItemSkipper;
-use ONGR\OXIDConnectorBundle\Document\ProductDocument;
-use ONGR\OXIDConnectorBundle\Document\VariantObject;
 use ONGR\OXIDConnectorBundle\Entity\Article;
 use ONGR\OXIDConnectorBundle\Entity\ObjectToCategory;
-use ONGR\OXIDConnectorBundle\Entity\Seo;
-use ONGR\OXIDConnectorBundle\Service\AttributesToDocumentsService;
-use ONGR\OXIDConnectorBundle\Service\SeoFinder;
-use ONGR\RouterBundle\Document\UrlNested;
 
 /**
  * Converts OXID article to ONGR product document.
  */
 class ProductModifier extends AbstractImportModifyEventListener
 {
-    /**
-     * @var AttributesToDocumentsService
-     */
-    private $attrToDocService;
-
-    /**
-     * @var int
-     */
-    private $languageId = 0;
-
-    /**
-     * @var SeoFinder
-     */
-    private $seoFinderService;
-
-    /**
-     * Dependency injection.
-     *
-     * @param AttributesToDocumentsService $attrToDocService
-     */
-    public function __construct(AttributesToDocumentsService $attrToDocService)
-    {
-        $this->attrToDocService = $attrToDocService;
-    }
-
     /**
      * {@inheritdoc}
      */
@@ -70,177 +39,129 @@ class ProductModifier extends AbstractImportModifyEventListener
             return;
         }
 
-        /** @var ProductDocument $document */
-        $document = $eventItem->getDocument();
+        parent::modify($eventItem, $event);
+    }
 
-        $document->setId($article->getId());
-        $document->setActive($article->isActive());
-        $document->setSku($article->getArtNum());
-        $document->setTitle($article->getTitle());
-        $document->setDescription($article->getShortDesc());
-        $document->setPrice($article->getPrice());
-        $document->setOldPrice($article->getTPrice());
-        $document->setStock($article->getStock());
-        $document->setAttributes($this->attrToDocService->transform($article->getAttributes()));
-
-        $this->extractUrls($article, $document);
-        $this->extractExtensionData($article, $document);
-        $this->extractVendor($article, $document);
-        $this->extractManufacturer($article, $document);
-        $this->extractCategories($article, $document);
-
-        $variants = $article->getVariants();
-        if ($variants) {
-            foreach ($variants as $variant) {
-                $this->modifyVariant($document, $variant);
-            }
+    /**
+     * {@inheritdoc}
+     */
+    protected function transform(array $document, $documentClass, $article)
+    {
+        if (!($article instanceof Article)) {
+            throw new \InvalidArgumentException('Invalid article provided');
         }
+
+        $document['long_description'] = $this->extractExtensionData($article);
+        $document['vendor'] = $this->extractVendor($article);
+        $document['manufacturer'] = $this->extractManufacturer($article);
+        $document['categories'] = $this->extractCategories($article);
+        $document['variants'] = $this->extractVariants($article);
+
+        return $document;
     }
 
     /**
      * Retrieves article extension data.
      *
-     * @param Article                       $entity
-     * @param ProductDocument|VariantObject $document
+     * @param Article $entity
+     *
+     * @return null|string
      */
-    protected function extractExtensionData(Article $entity, $document)
+    protected function extractExtensionData(Article $entity)
     {
         try {
-            $document->setLongDescription($entity->getExtension()->getLongDesc());
+            return $entity->getExtension()->getLongDesc();
         } catch (EntityNotFoundException $exception) {
-            // No extension. Just ignore.
+            return null;
         }
     }
 
     /**
      * Retrieves vendor title.
      *
-     * @param Article         $entity
-     * @param ProductDocument $document
+     * @param Article $entity
+     *
+     * @return null|string
      */
-    protected function extractVendor(Article $entity, ProductDocument $document)
+    protected function extractVendor(Article $entity)
     {
         try {
-            $document->setVendor($entity->getVendor()->getTitle());
+            return $entity->getVendor()->getTitle();
         } catch (EntityNotFoundException $exception) {
-            // No vendor. Just ignore.
+            return null;
         }
     }
 
     /**
      * Retrieves manufacturer title.
      *
-     * @param Article         $entity
-     * @param ProductDocument $document
+     * @param Article $entity
+     *
+     * @return null|string
      */
-    protected function extractManufacturer(Article $entity, ProductDocument $document)
+    protected function extractManufacturer(Article $entity)
     {
         try {
-            $document->setManufacturer($entity->getManufacturer()->getTitle());
+            return $entity->getManufacturer()->getTitle();
         } catch (EntityNotFoundException $exception) {
-            // No manufacturer. Just ignore.
+            return null;
         }
     }
 
     /**
-     * Converts Article categories to ProductModel categories.
+     * Converts Article categories to Product categories.
      *
-     * @param Article         $entity
-     * @param ProductDocument $document
+     * @param Article $entity
+     *
+     * @return array
      */
-    protected function extractCategories(Article $entity, ProductDocument $document)
+    protected function extractCategories(Article $entity)
     {
-        try {
-            $categories = [];
+        $categories = [];
 
+        try {
             /** @var ObjectToCategory $relation */
             foreach ($entity->getCategories() as $relation) {
                 if ($relation->getCategory()->isActive()) {
                     $categories[] = $relation->getCategory()->getId();
                 }
             }
-
-            $document->setCategories($categories);
         } catch (EntityNotFoundException $exception) {
             // No categories. Just ignore.
         }
+
+        return $categories;
     }
 
     /**
-     * Adds product variant to document.
+     * Converts Article variants to Product model variants.
      *
-     * @param ProductDocument $document
-     * @param Article         $variant
-     */
-    protected function modifyVariant($document, $variant)
-    {
-        $variantObject = new VariantObject();
-
-        $variantObject->setId($variant->getId());
-        $variantObject->setActive($variant->isActive());
-        $variantObject->setSku($variant->getArtNum());
-        $variantObject->setTitle($variant->getTitle());
-        $variantObject->setDescription($variant->getShortDesc());
-        $variantObject->setPrice($variant->getPrice());
-        $variantObject->setOldPrice($variant->getTPrice());
-        $variantObject->setStock($variant->getStock());
-        $variantObject->setAttributes($this->attrToDocService->transform($variant->getAttributes()));
-
-        $this->extractExtensionData($variant, $variantObject);
-
-        $document->addVariant($variantObject);
-    }
-
-    /**
-     * Extract article seo urls.
+     * @param Article $entity
      *
-     * @param Article         $article
-     * @param ProductDocument $document
+     * @return array
      */
-    private function extractUrls(Article $article, $document)
+    protected function extractVariants(Article $entity)
     {
-        $urls = [];
-        $seoUrls = $this->getSeoFinderService()->getEntitySeo($article, $this->languageId);
-        if (count($seoUrls) > 0) {
-            foreach ($seoUrls as $seo) {
-                /** @var Seo $seo */
-                $urlObject = new UrlNested();
-                $urlObject->setUrl($seo->getSeoUrl());
-                $urls[] = $urlObject;
-            }
+        $variantDocuments = [];
+        $variants = $entity->getVariants();
+        if (!$variants) {
+            return $variantDocuments;
         }
 
-        $document->setUrls(new \ArrayIterator($urls));
-        $document->setExpiredUrls([]);
-    }
+        foreach ($variants as $variant) {
+            $variantDocuments[] = [
+                '_id' => $variant->getId(),
+                'active' => $variant->isActive(),
+                'sku' => $variant->getArtNum(),
+                'title' => $variant->getTitle(),
+                'description' => $variant->getShortDesc(),
+                'price' => $variant->getPrice(),
+                'old_price' => $variant->getTPrice(),
+                'stock' => $variant->getStock(),
+                'long_description' => $this->extractExtensionData($variant),
+            ];
+        }
 
-    /**
-     * Set language id.
-     *
-     * @param int $languageId
-     */
-    public function setLanguageId($languageId)
-    {
-        $this->languageId = $languageId;
-    }
-
-    /**
-     * @return SeoFinder
-     */
-    public function getSeoFinderService()
-    {
-        return $this->seoFinderService;
-    }
-
-    /**
-     * @param SeoFinder $seoFinderService
-     *
-     * @return $this
-     */
-    public function setSeoFinderService(SeoFinder $seoFinderService)
-    {
-        $this->seoFinderService = $seoFinderService;
-
-        return $this;
+        return $variantDocuments;
     }
 }

@@ -11,8 +11,6 @@
 
 namespace ONGR\OXIDConnectorBundle\Service;
 
-use Doctrine\Common\Collections\ArrayCollection;
-use ONGR\OXIDConnectorBundle\Document\AttributeObject;
 use ONGR\OXIDConnectorBundle\Entity\Attribute;
 use ONGR\OXIDConnectorBundle\Entity\CategoryToAttribute;
 use ONGR\OXIDConnectorBundle\Entity\ObjectToAttribute;
@@ -27,7 +25,7 @@ class AttributesToDocumentsService
      *
      * @param array $attributes
      *
-     * @return AttributeObject[]
+     * @return array[]
      */
     public function transform($attributes)
     {
@@ -41,9 +39,10 @@ class AttributesToDocumentsService
         foreach ($attributes as $attr) {
             /** @var Attribute $attrEntity */
             $attrEntity = $attr->getAttribute();
-            $attrObj = new AttributeObject();
-            $attrObj->setTitle($attrEntity->getTitle());
-            $attrObj->setPos($attrEntity->getPos());
+            $attrObj = [
+                'title' => $attrEntity->getTitle(),
+                'pos' => $attrEntity->getPos(),
+            ];
             $result[] = $attrObj;
         }
 

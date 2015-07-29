@@ -29,7 +29,7 @@ class DataImportTest extends AbstractTestCase
 
         // Case No 1. Test Category import.
         $cases[] = [
-            'target' => 'category_import_test',
+            'target' => 'oxid.category',
             'repository' => 'TestBundle:CategoryDocument',
             'resultCount' => 2,
             'firstValue' => '0f41a4463b227c437f6e6bf57b1697c4',
@@ -37,7 +37,7 @@ class DataImportTest extends AbstractTestCase
 
         // Case No 2. Test Content import.
         $cases[] = [
-            'target' => 'content_import_test',
+            'target' => 'oxid.content',
             'repository' => 'TestBundle:ContentDocument',
             'resultCount' => 2,
             'firstValue' => '8709e45f31a86909e9f999222e80b1d0',
@@ -45,7 +45,7 @@ class DataImportTest extends AbstractTestCase
 
         // Case No 3. Test Product import.
         $cases[] = [
-            'target' => 'product_import_test',
+            'target' => 'oxid.product',
             'repository' => 'TestBundle:ProductDocument',
             'resultCount' => 1,
             'firstValue' => '6b698c33118caee4ca0882c33f513d2f',
@@ -72,7 +72,8 @@ class DataImportTest extends AbstractTestCase
             'ongr:import:full',
             ['target' => $target]
         );
-        $this->assertContains('Job finished', $result->getDisplay());
+        $display = $result->getDisplay();
+        $this->assertContains('Job finished', $display);
 
         // Check ElasticSearch for imported records.
         /** @var Manager $manager */

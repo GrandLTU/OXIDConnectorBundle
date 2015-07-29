@@ -48,10 +48,6 @@ class ONGROXIDConnectorExtension extends Extension
         $container->setParameter('ongr_oxid.entity_namespace', $config['entity_namespace']);
         $container->setParameter('ongr_oxid.language_id', $languageId);
 
-        if ($config['use_modifiers']) {
-            $this->loadModifiers($config, $loader);
-        }
-
         if (!empty($config['database_mapping'])) {
             if ($activeShop === null) {
                 throw new \LogicException(

@@ -38,7 +38,7 @@ class CategoryDocument extends AbstractCategoryDocument
     /**
      * @var string
      *
-     * @ES\Property(name="description", type="string")
+     * @ES\Property(name="long_description", type="string")
      */
     protected $longDescription;
 
