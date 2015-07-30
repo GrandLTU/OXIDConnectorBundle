@@ -100,29 +100,13 @@ ongr_connections:
             shop-id: 0
     pipelines:
         oxid:
-            shop: test
-            modifiers:
-                 - ONGR\ConnectionsBundle\EventListener\MappedModifyEventListener
-                 - ONGR\OXIDConnectorBundle\Modifier\UrlModifier
-            config:
-                attrToDocService: @ongr_oxid.attr_to_doc_service
-                seoFinderService: @ongr_oxid.seo_finder_service
             types:
                 product:
                     entity_class: ONGROXIDConnectorBundleTest:Article
                     document_class: TestBundle:ProductDocument
-                    map: %ongr_oxid.modifier.product.map%
-                    modifiers:
-                        - ONGR\OXIDConnectorBundle\Modifier\ProductModifier
-                        - ONGR\OXIDConnectorBundle\Modifier\AttributeModifier
                 category:
                     entity_class: ONGROXIDConnectorBundleTest:Category
                     document_class: TestBundle:CategoryDocument
-                    map: %ongr_oxid.modifier.category.map%
-                    modifiers:
-                        - ONGR\OXIDConnectorBundle\Modifier\CategoryModifier
-                        - ONGR\OXIDConnectorBundle\Modifier\AttributeModifier
                 content:
                     entity_class: ONGROXIDConnectorBundleTest:Content
                     document_class: TestBundle:ContentDocument
-                    map: %ongr_oxid.modifier.content.map%

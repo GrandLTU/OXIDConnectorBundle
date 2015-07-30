@@ -15,13 +15,14 @@ use Symfony\Component\Config\FileLocator;
 use Symfony\Component\Config\Loader\LoaderInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Definition;
+use Symfony\Component\DependencyInjection\Extension\PrependExtensionInterface;
 use Symfony\Component\DependencyInjection\Loader;
 use Symfony\Component\HttpKernel\DependencyInjection\Extension;
 
 /**
  * This is the class that loads and manages bundle configuration.
  */
-class ONGROXIDConnectorExtension extends Extension
+class ONGROXIDConnectorExtension extends Extension implements PrependExtensionInterface
 {
     /**
      * {@inheritdoc}
@@ -45,7 +46,6 @@ class ONGROXIDConnectorExtension extends Extension
             $container->setParameter('ongr_connections.shops', [$shop => ['shop_id' => $shopParam['shop_id']]]);
         }
 
-        $container->setParameter('ongr_oxid.entity_namespace', $config['entity_namespace']);
         $container->setParameter('ongr_oxid.language_id', $languageId);
 
         if (!empty($config['database_mapping'])) {
@@ -87,7 +87,9 @@ class ONGROXIDConnectorExtension extends Extension
     protected function loadModifiers($config, LoaderInterface $loader)
     {
         $toLoadModifiers = [
-            'product', 'category', 'content',
+            'product',
+            'category',
+            'content',
         ];
 
         foreach ($toLoadModifiers as $modifier) {
@@ -97,8 +99,13 @@ class ONGROXIDConnectorExtension extends Extension
         }
 
         $toLoadRelations = [
-            'product', 'category', 'content',
-            'oxaccessoire2article', 'oxactions2article', 'oxobject2action', 'oxfield2shop',
+            'product',
+            'category',
+            'content',
+            'oxaccessoire2article',
+            'oxactions2article',
+            'oxobject2action',
+            'oxfield2shop',
         ];
 
         foreach ($toLoadRelations as $relation) {
@@ -119,5 +126,61 @@ class ONGROXIDConnectorExtension extends Extension
     public function getAlias()
     {
         return 'ongr_oxid';
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function prepend(ContainerBuilder $container)
+    {
+        $loader = new Loader\YamlFileLoader($container, new FileLocator(__DIR__ . '/../Resources/config'));
+        $loader->load('maps.yml');
+
+        $config = $this->processConfiguration(
+            new Configuration(),
+            $container->getExtensionConfig($this->getAlias())
+        );
+
+        if (!$config['use_default_pipelines']) {
+            return;
+        }
+
+        $container->prependExtensionConfig(
+            'ongr_connections',
+            [
+                'pipelines' => [
+                    'oxid' => [
+                        'modifiers' => [
+                            'ONGR\ConnectionsBundle\EventListener\MappedModifyEventListener',
+                            'ONGR\OXIDConnectorBundle\Modifier\UrlModifier',
+                        ],
+                        'config' => [
+                            'attrToDocService' => '@ongr_oxid.attr_to_doc_service',
+                            'seoFinderService' => '@ongr_oxid.seo_finder_service',
+                            'languageId' => '%ongr_oxid.language_id%',
+                        ],
+                        'types' => [
+                            'product' => [
+                                'map' => '%ongr_oxid.modifier.product.map%',
+                                'modifiers' => [
+                                    'ONGR\OXIDConnectorBundle\Modifier\ProductModifier',
+                                    'ONGR\OXIDConnectorBundle\Modifier\AttributeModifier',
+                                ],
+                            ],
+                            'category' => [
+                                'map' => '%ongr_oxid.modifier.category.map%',
+                                'modifiers' => [
+                                    'ONGR\OXIDConnectorBundle\Modifier\CategoryModifier',
+                                    'ONGR\OXIDConnectorBundle\Modifier\AttributeModifier',
+                                ],
+                            ],
+                            'content' => [
+                                'map' => '%ongr_oxid.modifier.content.map%',
+                            ],
+                        ],
+                    ],
+                ],
+            ]
+        );
     }
 }

@@ -40,7 +40,6 @@ class ConfigurationTest extends \PHPUnit_Framework_TestCase
                     'lang_id' => 0,
                 ],
             ],
-            'entity_namespace' => 'AcmeDemoBundle',
         ];
 
         $processor = new Processor();

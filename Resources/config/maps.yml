@@ -1,0 +1,31 @@
+parameters:
+    ongr_oxid.modifier.category.map:
+        id: _id
+        active: active
+        hidden: hidden
+        left: left
+        right: right
+        root.id: root_id
+        sort: sort
+        title: title
+        desc: description
+        longDesc: long_description
+    ongr_oxid.modifier.content.map:
+        id: _id
+        title: title
+        content: content
+        folder: folder
+        loadId: slug
+        snippet: snippet
+        type: type
+        active: active
+        position: position
+    ongr_oxid.modifier.product.map:
+        id: _id
+        active: active
+        artNum: sku
+        title: title
+        shortDesc: description
+        price: price
+        tPrice: old_price
+        stock: stock
