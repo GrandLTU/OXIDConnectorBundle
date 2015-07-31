@@ -14,29 +14,19 @@ namespace ONGR\OXIDConnectorBundle\Tests\Unit\Modifier;
 use ONGR\ConnectionsBundle\Pipeline\Event\ItemPipelineEvent;
 use ONGR\ConnectionsBundle\Pipeline\Item\ImportItem;
 use ONGR\OXIDConnectorBundle\Document\AttributeObject;
-use ONGR\OXIDConnectorBundle\Document\ProductDocument;
 use ONGR\OXIDConnectorBundle\Document\VariantObject;
 use ONGR\OXIDConnectorBundle\Entity\ArticleExtension;
 use ONGR\OXIDConnectorBundle\Entity\ArticleToCategory;
 use ONGR\OXIDConnectorBundle\Entity\Manufacturer;
-use ONGR\OXIDConnectorBundle\Entity\Seo;
 use ONGR\OXIDConnectorBundle\Entity\Vendor;
 use ONGR\OXIDConnectorBundle\Modifier\ProductModifier;
-use ONGR\OXIDConnectorBundle\Service\AttributesToDocumentsService;
-use ONGR\OXIDConnectorBundle\Service\SeoFinder;
 use ONGR\OXIDConnectorBundle\Tests\Functional\Entity\Article;
 use ONGR\OXIDConnectorBundle\Tests\Functional\Entity\ArticleToAttribute;
 use ONGR\OXIDConnectorBundle\Tests\Functional\Entity\Attribute;
 use ONGR\OXIDConnectorBundle\Tests\Functional\Entity\Category;
-use ONGR\RouterBundle\Document\UrlNested;
 
 class ProductModifierTest extends \PHPUnit_Framework_TestCase
 {
-    /**
-     * @var AttributesToDocumentsService
-     */
-    private $attrToDocService;
-
     /**
      * @var ProductModifier
      */
@@ -47,20 +37,7 @@ class ProductModifierTest extends \PHPUnit_Framework_TestCase
      */
     protected function setUp()
     {
-        $this->attrToDocService = new AttributesToDocumentsService();
-        $this->modifier = new ProductModifier($this->attrToDocService);
-
-        /** @var Seo|\PHPUnit_Framework_MockObject_MockObject $seo */
-        $seo = $this->getMockForAbstractClass('ONGR\OXIDConnectorBundle\Entity\Seo');
-        $seo->setSeoUrl('test');
-
-        /** @var SeoFinder|\PHPUnit_Framework_MockObject_MockObject $seoFinder */
-        $seoFinder = $this->getMockBuilder('ONGR\OXIDConnectorBundle\Service\SeoFinder')
-            ->disableOriginalConstructor()
-            ->getMock();
-        $seoFinder->expects($this->any())->method('getEntitySeo')->willReturn(new \ArrayIterator([$seo]));
-
-        $this->modifier->setSeoFinderService($seoFinder);
+        $this->modifier = new ProductModifier();
     }
 
     /**
@@ -135,37 +112,48 @@ class ProductModifierTest extends \PHPUnit_Framework_TestCase
 
         $entity->setVariants($this->getVariants($entity));
 
-        $expectedDocument = new ProductDocument();
-        $expectedDocument->setId('id123');
-        $expectedDocument->setActive(true);
-        $expectedDocument->setSku('abc123');
-        $expectedDocument->setTitle('Any title');
-        $expectedDocument->setDescription('Short description');
-        $expectedDocument->setPrice(12.34);
-        $expectedDocument->setOldPrice(43.21);
-        $expectedDocument->setLongDescription('Long description');
-        $expectedDocument->setCategories(['activeCategoryId']);
-        $expectedDocument->setStock(5);
-        $expectedDocument->setVendor('Vendor A');
-        $expectedDocument->setManufacturer('Manufacturer A');
-        $expectedDocument->setVariants($this->getExpectedVariants());
-        $url = new UrlNested();
-        $url->setUrl('test');
-        $expectedDocument->setUrls(new \ArrayIterator([$url]));
-        $expectedDocument->setExpiredUrls([]);
-        $attObj = new AttributeObject();
-        $attObj->setPos(1);
-        $attObj->setTitle('testAttributeTitle');
-        $expectedDocument->setAttributes([$attObj]);
+        $expectedDocument = [
+            'long_description' => 'Long description',
+            'vendor' => 'Vendor A',
+            'manufacturer' => 'Manufacturer A',
+            'categories' => ['activeCategoryId'],
+            'variants' => [
+                [
+                    '_id' => 'id1235',
+                    'active' => true,
+                    'sku' => 'abc123',
+                    'title' => 'Any title',
+                    'description' => 'Short description',
+                    'price' => 13.34,
+                    'old_price' => 44.21,
+                    'stock' => 5,
+                    'long_description' => 'Long description',
+                ],
+                [
+                    '_id' => 'id1234',
+                    'active' => false,
+                    'sku' => 'abc1234',
+                    'title' => 'Any title2',
+                    'description' => 'Short description2',
+                    'price' => 13.34,
+                    'old_price' => 44.21,
+                    'stock' => 6,
+                    'long_description' => 'Long description2',
+                ],
+            ],
+        ];
 
-        $document = new ProductDocument();
+        $document = [];
 
         /** @var ItemPipelineEvent|\PHPUnit_Framework_MockObject_MockObject $event */
         $event = $this->getMock('ONGR\ConnectionsBundle\Pipeline\Event\ItemPipelineEvent', [], [], '', false);
+        $event->method('getItem')->willReturn(
+            new ImportItem($entity, $document, 'ONGROXIDConnectorBundle:ProductDocument')
+        );
 
-        $this->modifier->modify(new ImportItem($entity, $document), $event);
+        $this->modifier->onModify($event);
 
-        $this->assertEquals($expectedDocument, $document);
+        $this->assertEquals($expectedDocument, $event->getItem()->getDocument());
     }
 
     /**
@@ -181,13 +169,16 @@ class ProductModifierTest extends \PHPUnit_Framework_TestCase
         $entity = $this->getMockForAbstractClass('ONGR\OXIDConnectorBundle\Entity\Article');
         $entity->setParent($entityParent);
 
-        $document = new ProductDocument();
+        $document = [];
 
         /** @var ItemPipelineEvent|\PHPUnit_Framework_MockObject_MockObject $event */
         $event = $this->getMock('ONGR\ConnectionsBundle\Pipeline\Event\ItemPipelineEvent', [], [], '', false);
         $event->expects($this->once())->method('setItemSkip');
+        $event->method('getItem')->willReturn(
+            new ImportItem($entity, $document, 'ONGROXIDConnectorBundle:ProductDocument')
+        );
 
-        $this->modifier->modify(new ImportItem($entity, $document), $event);
+        $this->modifier->onModify($event);
     }
 
     /**

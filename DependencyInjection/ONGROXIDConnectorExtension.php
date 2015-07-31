@@ -17,6 +17,7 @@ use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Definition;
 use Symfony\Component\DependencyInjection\Extension\PrependExtensionInterface;
 use Symfony\Component\DependencyInjection\Loader;
+use Symfony\Component\DependencyInjection\Reference;
 use Symfony\Component\HttpKernel\DependencyInjection\Extension;
 
 /**
@@ -76,6 +77,19 @@ class ONGROXIDConnectorExtension extends Extension implements PrependExtensionIn
         $container->setParameter('ongr_oxid.tags.shop_tag', $tags['@shop_tag']);
         $container->setParameter('ongr_oxid.tags.lang_tag', $tags['@lang_tag']);
         $container->setParameter('ongr_oxid.tags.view_tag', $tags['{@view_tag}']);
+
+        $container->setDefinition(
+            'ongr_oxid.language_service',
+            new Definition(
+                'ONGR\OXIDConnectorBundle\Service\LanguageService',
+                [
+                    new Reference('ongr_connections.shop_service'),
+                    $config['database_mapping'],
+                ]
+            )
+        );
+
+        $this->loadModifiers($config, $loader);
     }
 
     /**
@@ -86,16 +100,8 @@ class ONGROXIDConnectorExtension extends Extension implements PrependExtensionIn
      */
     protected function loadModifiers($config, LoaderInterface $loader)
     {
-        $toLoadModifiers = [
-            'product',
-            'category',
-            'content',
-        ];
-
-        foreach ($toLoadModifiers as $modifier) {
-            if ($config['modifiers'] === [] || in_array($modifier, $config['modifiers'])) {
-                $loader->load("modifiers/{$modifier}.yml");
-            }
+        if (!$config['use_default_relations']) {
+            return;
         }
 
         $toLoadRelations = [
@@ -109,12 +115,8 @@ class ONGROXIDConnectorExtension extends Extension implements PrependExtensionIn
         ];
 
         foreach ($toLoadRelations as $relation) {
-            if ($config['modifiers'] === [] || in_array($relation, $config['modifiers'])) {
-                // Load the relations as well if they're enabled.
-                if ($config['use_default_relations']) {
-                    $loader->load("relations/{$relation}.yml");
-                }
-            }
+            // Load the relations as well if they're enabled.
+            $loader->load("relations/{$relation}.yml");
         }
     }
 
@@ -157,7 +159,7 @@ class ONGROXIDConnectorExtension extends Extension implements PrependExtensionIn
                         'config' => [
                             'attrToDocService' => '@ongr_oxid.attr_to_doc_service',
                             'seoFinderService' => '@ongr_oxid.seo_finder_service',
-                            'languageId' => '%ongr_oxid.language_id%',
+                            'languageId' => '@=service(\'ongr_oxid.language_service\').getActiveShopLanguage()',
                         ],
                         'types' => [
                             'product' => [

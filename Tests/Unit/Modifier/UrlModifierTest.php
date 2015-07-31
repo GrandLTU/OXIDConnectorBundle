@@ -13,15 +13,26 @@ namespace ONGR\OXIDConnectorBundle\Tests\Unit\Modifier;
 
 use ONGR\ConnectionsBundle\Pipeline\Event\ItemPipelineEvent;
 use ONGR\ConnectionsBundle\Pipeline\Item\ImportItem;
-use ONGR\OXIDConnectorBundle\Modifier\CategoryModifier;
-use ONGR\OXIDConnectorBundle\Tests\Functional\Entity\Attribute;
-use ONGR\OXIDConnectorBundle\Tests\Functional\Entity\Category;
-use ONGR\OXIDConnectorBundle\Tests\Functional\Entity\CategoryToAttribute;
+use ONGR\OXIDConnectorBundle\Entity\Attribute;
+use ONGR\OXIDConnectorBundle\Entity\Category;
+use ONGR\OXIDConnectorBundle\Entity\CategoryToAttribute;
+use ONGR\OXIDConnectorBundle\Entity\Seo;
+use ONGR\OXIDConnectorBundle\Modifier\AttributeModifier;
+use ONGR\OXIDConnectorBundle\Modifier\UrlModifier;
+use ONGR\OXIDConnectorBundle\Service\SeoFinder;
 
-class CategoryModifierTest extends \PHPUnit_Framework_TestCase
+/**
+ * Class AttributeModifierTest.
+ */
+class UrlModifierTest extends \PHPUnit_Framework_TestCase
 {
     /**
-     * @var CategoryModifier
+     * @var SeoFinder|\PHPUnit_Framework_MockObject_MockObject
+     */
+    private $seoFinder;
+
+    /**
+     * @var AttributeModifier
      */
     private $modifier;
 
@@ -30,7 +41,18 @@ class CategoryModifierTest extends \PHPUnit_Framework_TestCase
      */
     protected function setUp()
     {
-        $this->modifier = new CategoryModifier();
+        $this->modifier = new UrlModifier();
+
+        /** @var Seo|\PHPUnit_Framework_MockObject_MockObject $seo */
+        $seo = $this->getMockForAbstractClass('ONGR\OXIDConnectorBundle\Entity\Seo');
+        $seo->setSeoUrl('test');
+
+        $this->seoFinder = $this->getMockBuilder('ONGR\OXIDConnectorBundle\Service\SeoFinder')
+            ->disableOriginalConstructor()
+            ->getMock();
+        $this->seoFinder->expects($this->any())->method('getEntitySeo')->willReturn(new \ArrayIterator([$seo]));
+        
+        $this->modifier->setSeoFinderService($this->seoFinder);
     }
 
     /**
@@ -69,7 +91,10 @@ class CategoryModifierTest extends \PHPUnit_Framework_TestCase
             ->setLeft(102)
             ->addAttribute($catToAttr);
 
-        $expectedDocument = ['parent_id' => 'oxrootid'];
+        $expectedDocument = [
+            'urls' => [['url' => 'test']],
+            'expired_urls' => [],
+        ];
 
         $document = [];
 

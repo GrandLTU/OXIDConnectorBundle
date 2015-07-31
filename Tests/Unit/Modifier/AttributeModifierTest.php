@@ -13,15 +13,24 @@ namespace ONGR\OXIDConnectorBundle\Tests\Unit\Modifier;
 
 use ONGR\ConnectionsBundle\Pipeline\Event\ItemPipelineEvent;
 use ONGR\ConnectionsBundle\Pipeline\Item\ImportItem;
-use ONGR\OXIDConnectorBundle\Modifier\CategoryModifier;
-use ONGR\OXIDConnectorBundle\Tests\Functional\Entity\Attribute;
-use ONGR\OXIDConnectorBundle\Tests\Functional\Entity\Category;
-use ONGR\OXIDConnectorBundle\Tests\Functional\Entity\CategoryToAttribute;
+use ONGR\OXIDConnectorBundle\Entity\Attribute;
+use ONGR\OXIDConnectorBundle\Entity\Category;
+use ONGR\OXIDConnectorBundle\Entity\CategoryToAttribute;
+use ONGR\OXIDConnectorBundle\Modifier\AttributeModifier;
+use ONGR\OXIDConnectorBundle\Service\AttributesToDocumentsService;
 
-class CategoryModifierTest extends \PHPUnit_Framework_TestCase
+/**
+ * Class AttributeModifierTest.
+ */
+class AttributeModifierTest extends \PHPUnit_Framework_TestCase
 {
     /**
-     * @var CategoryModifier
+     * @var AttributesToDocumentsService
+     */
+    private $attributesToDocumentsService;
+
+    /**
+     * @var AttributeModifier
      */
     private $modifier;
 
@@ -30,7 +39,8 @@ class CategoryModifierTest extends \PHPUnit_Framework_TestCase
      */
     protected function setUp()
     {
-        $this->modifier = new CategoryModifier();
+        $this->attributesToDocumentsService = new AttributesToDocumentsService();
+        $this->modifier = new AttributeModifier($this->attributesToDocumentsService);
     }
 
     /**
@@ -69,7 +79,14 @@ class CategoryModifierTest extends \PHPUnit_Framework_TestCase
             ->setLeft(102)
             ->addAttribute($catToAttr);
 
-        $expectedDocument = ['parent_id' => 'oxrootid'];
+        $expectedDocument = [
+            'attributes' => [
+                [
+                    'title' => 'testAttributeTitle',
+                    'pos' => 1,
+                ],
+            ],
+        ];
 
         $document = [];
 

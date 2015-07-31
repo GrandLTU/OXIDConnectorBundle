@@ -43,7 +43,6 @@ class ONGROXIDConnectorExtensionTest extends \PHPUnit_Framework_TestCase
                         'lang_id' => 0,
                     ],
                 ],
-                'entity_namespace' => 'AcmeDemoBundle',
             ],
         ];
     }
@@ -122,11 +121,6 @@ class ONGROXIDConnectorExtensionTest extends \PHPUnit_Framework_TestCase
         $container->setParameter('ongr_connections.active_shop', 'alpha');
         $out[] = [$container, $defaultConfig, 'ongr_oxid.mapping_listener'];
 
-        // Case #1: default config, product document modifier.
-        $container = new ContainerBuilder();
-        $container->setParameter('ongr_connections.active_shop', 'alpha');
-        $out[] = [$container, $defaultConfig, 'ongr_oxid.modifier.product'];
-
         return $out;
     }
 
@@ -137,28 +131,13 @@ class ONGROXIDConnectorExtensionTest extends \PHPUnit_Framework_TestCase
     {
         $container = new ContainerBuilder();
         $container->setParameter('ongr_connections.active_shop', 'alpha');
-        $emptyConfig = ['ongr_oxid' => ['database_mapping' => [], 'entity_namespace' => '']];
+        $emptyConfig = ['ongr_oxid' => ['database_mapping' => []]];
 
         $extension = new ONGROXIDConnectorExtension();
         $extension->load($emptyConfig, $container);
 
         $definition = $container->getDefinition('ongr_oxid.mapping_listener');
         $this->assertEquals(['@shop_tag' => '', '@lang_tag' => '', '{@view_tag}' => ''], $definition->getArgument(0));
-    }
-
-    /**
-     * Test if 'ongr_oxid.modifier.product' is not defined when other names are set in configuration.
-     */
-    public function testSkippedProductModifierDefinition()
-    {
-        $container = new ContainerBuilder();
-        $container->setParameter('ongr_connections.active_shop', 'alpha');
-        $config = $this->getDefaultConfig();
-        $config['ongr_oxid']['modifiers'] = [null];
-
-        $extension = new ONGROXIDConnectorExtension();
-        $extension->load($config, $container);
-        $this->assertFalse($container->hasDefinition('ongr_oxid.modifier.product'));
     }
 
     /**
@@ -191,56 +170,6 @@ class ONGROXIDConnectorExtensionTest extends \PHPUnit_Framework_TestCase
 
         $extension = new ONGROXIDConnectorExtension();
         $extension->load($config, $container);
-    }
-
-    /**
-     * Tests if it is possible to disable loading of modifiers.
-     *
-     * @param ContainerBuilder $container     Initial container.
-     * @param array            $config        Configuration to load.
-     * @param int              $expectedCalls Expected number of calls for 'loadModifiers' method.
-     *
-     * @dataProvider getModifierLoadingData
-     */
-    public function testModifierLoading($container, $config, $expectedCalls)
-    {
-        $mock = $this->getMock(
-            'ONGR\OXIDConnectorBundle\DependencyInjection\ONGROXIDConnectorExtension',
-            ['loadModifiers']
-        );
-
-        $mock->expects($this->exactly($expectedCalls))
-             ->method('loadModifiers');
-
-        $mock->load($config, $container);
-    }
-
-    /**
-     * Data provider for testModifierLoading().
-     *
-     * @return array
-     */
-    public function getModifierLoadingData()
-    {
-        $out = [];
-
-        $container = new ContainerBuilder();
-        $container->setParameter('ongr_connections.active_shop', 'alpha');
-
-        $config = $this->getDefaultConfig();
-
-        // Case #0: with default config.
-        $out[] = [$container, $config, 1];
-
-        // Case #1: with default config and 'use_modifiers' set to true.
-        $config['ongr_oxid']['use_modifiers'] = true;
-        $out[] = [$container, $config, 1];
-
-        // Case #2: with default config and 'use_modifiers' set to false.
-        $config['ongr_oxid']['use_modifiers'] = false;
-        $out[] = [$container, $config, 0];
-
-        return $out;
     }
 
     /**

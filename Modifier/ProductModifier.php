@@ -27,7 +27,7 @@ class ProductModifier extends AbstractImportModifyEventListener
     /**
      * {@inheritdoc}
      */
-    public function modify(AbstractImportItem $eventItem, ItemPipelineEvent $event)
+    protected function modify(AbstractImportItem $eventItem, ItemPipelineEvent $event)
     {
         /** @var Article $article */
         $article = $eventItem->getEntity();

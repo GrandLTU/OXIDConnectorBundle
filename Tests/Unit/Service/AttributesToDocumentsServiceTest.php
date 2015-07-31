@@ -60,9 +60,8 @@ class AttributesToDocumentsServiceTest extends \PHPUnit_Framework_TestCase
 
         $result = $this->service->transform($attributes);
         foreach ($result as $idx => $actual) {
-            $this->assertInstanceOf('\ONGR\OXIDConnectorBundle\Document\AttributeObject', $actual);
-            $this->assertEquals('Some title ' . ($idx + 1), $actual->getTitle());
-            $this->assertEquals($idx + 1, $actual->getPos());
+            $this->assertEquals('Some title ' . ($idx + 1), $actual['title']);
+            $this->assertEquals($idx + 1, $actual['pos']);
         }
     }
 
@@ -91,9 +90,8 @@ class AttributesToDocumentsServiceTest extends \PHPUnit_Framework_TestCase
 
         $result = $this->service->transform($attributes);
         foreach ($result as $idx => $actual) {
-            $this->assertInstanceOf('\ONGR\OXIDConnectorBundle\Document\AttributeObject', $actual);
-            $this->assertEquals('Some other title ' . ($idx + 1), $actual->getTitle());
-            $this->assertEquals($idx + 3, $actual->getPos());
+            $this->assertEquals('Some other title ' . ($idx + 1), $actual['title']);
+            $this->assertEquals($idx + 3, $actual['pos']);
         }
     }
 

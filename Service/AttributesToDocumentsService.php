@@ -23,7 +23,7 @@ class AttributesToDocumentsService
     /**
      * Worker method.
      *
-     * @param array $attributes
+     * @param \Traversable $attributes
      *
      * @return array[]
      */

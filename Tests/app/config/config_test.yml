@@ -66,7 +66,6 @@ ongr_oxid:
                 @lang_tag: ''
             shop_id: 0
             lang_id: 0
-    entity_namespace: ONGROXIDConnectorBundle
 
 ongr_elasticsearch:
     connections:
